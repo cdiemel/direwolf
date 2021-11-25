@@ -315,6 +315,22 @@ int main (int argc, char *argv[])
 
 	if (strlen(transmit_from) > 0) {
 /*
+ * Create a sent directory to move messages to
+ * after they have been attempted to be sent.
+ * Does not discriminate between message send
+ * success or failure.
+ */
+		char sent_path [300];
+		struct stat st = {0};
+		strlcpy (sent_path, transmit_from, sizeof(sent_path));
+		strlcat (sent_path, DIR_CHAR, sizeof(sent_path));
+		strlcat (sent_path, 'sent', sizeof(sent_path));
+		
+		if (stat (sent_path, &st) == -1) {
+			mkdir (sent_path, 0700);
+		}
+		
+/*
  * Process and delete all files in specified directory.
  * When done, sleep for a second and try again.
  * This doesn't take them in any particular order.
@@ -337,7 +353,7 @@ int main (int argc, char *argv[])
 
 	        text_color_set(DW_COLOR_DEBUG);
 	        dw_printf ("Processing %s for transmit...\n", ep->d_name);
-		strlcpy (path, transmit_from, sizeof(path));
+			strlcpy (path, transmit_from, sizeof(path));
 	        strlcat (path, DIR_CHAR, sizeof(path));
 	        strlcat (path, ep->d_name, sizeof(path));
 	        fp = fopen (path, "r");
@@ -350,7 +366,13 @@ int main (int argc, char *argv[])
 	            process_input (stuff);
 	          }
 	          fclose (fp);
-		  unlink (path);
+			  // Removed delete in exchange for move to sent dir
+			  char sent_file [300];
+			  strlcpy (sent_file, sent_path, sizeof(sent_file));
+	          strlcat (sent_file, DIR_CHAR, sizeof(sent_file));
+	          strlcat (sent_file, ep->d_name, sizeof(sent_file));
+			  rename (path,sent_file)
+			  unlink (path);
 	        }
 	        else {
 	          text_color_set(DW_COLOR_ERROR);
