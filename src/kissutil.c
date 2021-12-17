@@ -336,66 +336,63 @@ int main (int argc, char *argv[])
  * This doesn't take them in any particular order.
  * A future enhancement might sort by name or timestamp.
  */
-	  while (1) {
-	    DIR *dp;
-	    struct dirent *ep;
+		while (1) {
+			DIR *dp;
+			struct dirent *ep;
 
-	    //text_color_set(DW_COLOR_DEBUG);
+			//text_color_set(DW_COLOR_DEBUG);
             //dw_printf("Get directory listing...\n");
 
-	    dp = opendir (transmit_from);
-	    if (dp != NULL) {
-	      while ((ep = readdir(dp)) != NULL) {
-	        char path [300];
-	        FILE *fp;
-	        if (ep->d_name[0] == '.')
-	          continue;
+			dp = opendir (transmit_from);
+			if (dp != NULL) {
+				while ((ep = readdir(dp)) != NULL) {
+					char path [300];
+					FILE *fp;
+					if (ep->d_name[0] == '.')
+						continue;
 
-	        text_color_set(DW_COLOR_DEBUG);
-	        dw_printf ("Processing %s for transmit...\n", ep->d_name);
-			strlcpy (path, transmit_from, sizeof(path));
-	        strlcat (path, DIR_CHAR, sizeof(path));
-	        strlcat (path, ep->d_name, sizeof(path));
-	        fp = fopen (path, "r");
-		if (fp != NULL) {
-	          while (fgets(stuff, sizeof(stuff), fp) != NULL) {         
-	            trim (stuff);
-	            text_color_set(DW_COLOR_DEBUG);
-	            dw_printf ("%s\n", stuff);
-		    // TODO: Don't delete file if errors encountered?
-	            process_input (stuff);
-	          }
-	          fclose (fp);
-			  // Removed delete in exchange for move to sent dir
-			  char sent_file [300];
-			  strlcpy (sent_file, sent_path, sizeof(sent_file));
-	          strlcat (sent_file, DIR_CHAR, sizeof(sent_file));
-	          strlcat (sent_file, ep->d_name, sizeof(sent_file));
-			  rename (path,sent_file)
-			  unlink (path);
-	        }
-	        else {
-	          text_color_set(DW_COLOR_ERROR);
-                  dw_printf("Can't open for read: %s\n", path);
-	        }
-	      }
-	      closedir (dp);
-	    }
-	    else {
-	      text_color_set(DW_COLOR_ERROR);
-              dw_printf("Can't access transmit queue directory %s.  Quitting.\n", transmit_from);
-	      exit (EXIT_FAILURE);
-	    }
-	    SLEEP_SEC (1);
-	  }
-	}
-	else {
+					text_color_set(DW_COLOR_DEBUG);
+					dw_printf ("Processing %s for transmit...\n", ep->d_name);
+					strlcpy (path, transmit_from, sizeof(path));
+					strlcat (path, DIR_CHAR, sizeof(path));
+					strlcat (path, ep->d_name, sizeof(path));
+					fp = fopen (path, "r");
+					if (fp != NULL) {
+						while (fgets(stuff, sizeof(stuff), fp) != NULL) {
+							trim (stuff);
+							text_color_set(DW_COLOR_DEBUG);
+							dw_printf ("%s\n", stuff);
+							// TODO: Don't delete file if errors encountered?
+							process_input (stuff);
+						}
+						fclose (fp);
+						// Removed delete in exchange for move to sent dir
+						char sent_file [300];
+						strlcpy (sent_file, sent_path, sizeof(sent_file));
+						strlcat (sent_file, DIR_CHAR, sizeof(sent_file));
+						strlcat (sent_file, ep->d_name, sizeof(sent_file));
+						rename (path,sent_file)
+						unlink (path);
+					} else {
+						text_color_set(DW_COLOR_ERROR);
+						w_printf("Can't open for read: %s\n", path);
+					}
+				}
+				closedir (dp);
+			} else {
+				text_color_set(DW_COLOR_ERROR);
+				dw_printf("Can't access transmit queue directory %s.  Quitting.\n", transmit_from);
+				exit (EXIT_FAILURE);
+			}
+			SLEEP_SEC (1);
+		}
+	} else {
 /*
  * Using stdin.
  */
-	  while (fgets(stuff, sizeof(stuff), stdin) != NULL) {
-	    process_input (stuff);
-	  }
+		while (fgets(stuff, sizeof(stuff), stdin) != NULL) {
+			process_input (stuff);
+		}
 	}
 
 	return (EXIT_SUCCESS);
@@ -440,105 +437,99 @@ static int parse_number (char *str, int de_fault)
 	return (n);
 }
 
-static void process_input (char *stuff)
-{
+static void process_input (char *stuff) {
 	char *p;
 	int chan = 0;
-
-/*
- * Remove any end of line character(s).
- */
+	
+	/*
+	* Remove any end of line character(s).
+	*/
 	trim (stuff);
-
-/*
- * Optional prefix, like "[9]" or "[99]" to specify channel.
- */
+	
+	/*
+	* Optional prefix, like "[9]" or "[99]" to specify channel.
+	*/
 	p = stuff;
 	while (isspace(*p)) p++;
 	if (*p == '[') {
-	  p++;
-	  if (p[1] == ']') {
-	    chan = atoi(p);
-	    p += 2;
-	  }
-	  else if (p[2] == ']') {
-	    chan = atoi(p);
-	    p += 3;
-	  }
-	  else {
-	    text_color_set(DW_COLOR_ERROR);
-	    dw_printf ("ERROR! One or two digit channel number and ] was expected after [ at beginning of line.\n");
-	    usage2();
-	    return;
-	  }
-	  if (chan < 0 || chan > 15) {
-	    text_color_set(DW_COLOR_ERROR);
-	    dw_printf ("ERROR! KISS channel number must be in range of 0 thru 15.\n");
-	    usage2();
-	    return;
-	  }
-	  while (isspace(*p)) p++;
+		p++;
+		if (p[1] == ']') {
+			chan = atoi(p);
+			p += 2;
+		} else if (p[2] == ']') {
+			chan = atoi(p);
+			p += 3;
+		} else {
+			text_color_set(DW_COLOR_ERROR);
+			dw_printf ("ERROR! One or two digit channel number and ] was expected after [ at beginning of line.\n");
+			usage2();
+			return ;
+		}
+		if (chan < 0 || chan > 15) {
+			text_color_set(DW_COLOR_ERROR);
+			dw_printf ("ERROR! KISS channel number must be in range of 0 thru 15.\n");
+			usage2();
+			return ;
+		}
+		while (isspace(*p)) p++;
 	}
-
-/*
- * If it starts with upper case letter or digit, assume it is an AX.25 frame in monitor format.
- * Lower case is a command (e.g.  Persistence or set Hardware).
- * Anything else, print explanation of what is expected.
- */
+	
+	/*
+	* If it starts with upper case letter or digit, assume it is an AX.25 frame in monitor format.
+	* Lower case is a command (e.g.  Persistence or set Hardware).
+	* Anything else, print explanation of what is expected.
+	*/
 	if (isupper(*p) || isdigit(*p)) {
-
-	  // Parse the "TNC2 monitor format" and convert to AX.25 frame.
-
-	  unsigned char frame_data[AX25_MAX_PACKET_LEN];
-	  packet_t pp = ax25_from_text (p, 1);
-	  if (pp != NULL) {
-	    int frame_len = ax25_pack (pp, frame_data);
-	    send_to_kiss_tnc (chan, KISS_CMD_DATA_FRAME, (char*)frame_data, frame_len);
-	    ax25_delete (pp);
-	  }
-	  else {
-	    text_color_set(DW_COLOR_ERROR);
-	    dw_printf ("ERROR! Could not convert to AX.25 frame: %s\n", p);
-	  }
-	}
-	else if (islower(*p)) {
-	  char value;
-
-	  switch (*p) {
-	    case 'd':			// txDelay, 10ms units
-	      value = parse_number(p+1, DEFAULT_TXDELAY);
-	      send_to_kiss_tnc (chan, KISS_CMD_TXDELAY, &value, 1);
-	      break;
-	    case 'p':			// Persistence
-	      value = parse_number(p+1, DEFAULT_PERSIST);
-	      send_to_kiss_tnc (chan, KISS_CMD_PERSISTENCE, &value, 1);
-	      break;
-	    case 's':			// Slot time, 10ms units
-	      value = parse_number(p+1,  DEFAULT_SLOTTIME);
-	      send_to_kiss_tnc (chan, KISS_CMD_SLOTTIME, &value, 1);
-	      break;
-	    case 't':			// txTail, 10ms units
-	      value = parse_number(p+1, DEFAULT_TXTAIL);
-	      send_to_kiss_tnc (chan, KISS_CMD_TXTAIL, &value, 1);
-	      break;
-	    case 'f':			// Full duplex
-	      value = parse_number(p+1, 0);
-	      send_to_kiss_tnc (chan, KISS_CMD_FULLDUPLEX, &value, 1);
-	      break;
-	    case 'h':			// set Hardware
-	      p++;
-	      while (*p != '\0' && isspace(*p)) { p++; }
-	      send_to_kiss_tnc (chan, KISS_CMD_SET_HARDWARE, p, strlen(p));
-	      break;
-	    default:
-	      text_color_set(DW_COLOR_ERROR);
-	      dw_printf ("Invalid command. Must be one of d p s t f h.\n");
-	      usage2 ();
-	      break;
-	  }
-	}
-	else {
-	  usage2 ();
+	
+		// Parse the "TNC2 monitor format" and convert to AX.25 frame.
+		
+		unsigned char frame_data[AX25_MAX_PACKET_LEN];
+		packet_t pp = ax25_from_text (p, 1);
+		if (pp != NULL) {
+			int frame_len = ax25_pack (pp, frame_data);
+			send_to_kiss_tnc (chan, KISS_CMD_DATA_FRAME, (char*)frame_data, frame_len);
+			ax25_delete (pp);
+		} else {
+			text_color_set(DW_COLOR_ERROR);
+			dw_printf ("ERROR! Could not convert to AX.25 frame: %s\n", p);
+		}
+	} else if (islower(*p)) {
+		char value;
+		
+		switch (*p) {
+			case 'd':			// txDelay, 10ms units
+				value = parse_number(p+1, DEFAULT_TXDELAY);
+				send_to_kiss_tnc (chan, KISS_CMD_TXDELAY, &value, 1);
+				break;
+			case 'p':			// Persistence
+				value = parse_number(p+1, DEFAULT_PERSIST);
+				send_to_kiss_tnc (chan, KISS_CMD_PERSISTENCE, &value, 1);
+				break;
+			case 's':			// Slot time, 10ms units
+				value = parse_number(p+1,  DEFAULT_SLOTTIME);
+				send_to_kiss_tnc (chan, KISS_CMD_SLOTTIME, &value, 1);
+				break;
+			case 't':			// txTail, 10ms units
+				value = parse_number(p+1, DEFAULT_TXTAIL);
+				send_to_kiss_tnc (chan, KISS_CMD_TXTAIL, &value, 1);
+				break;
+			case 'f':			// Full duplex
+				value = parse_number(p+1, 0);
+				send_to_kiss_tnc (chan, KISS_CMD_FULLDUPLEX, &value, 1);
+				break;
+			case 'h':			// set Hardware
+				p++;
+				while (*p != '\0' && isspace(*p)) { p++; }
+				send_to_kiss_tnc (chan, KISS_CMD_SET_HARDWARE, p, strlen(p));
+				break;
+			default:
+				text_color_set(DW_COLOR_ERROR);
+				dw_printf ("Invalid command. Must be one of d p s t f h.\n");
+				usage2 ();
+				break;
+		}
+	} else {
+		usage2 ();
 	}
 
 } /* end process_input */
